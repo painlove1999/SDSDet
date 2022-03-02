@@ -32,7 +32,7 @@ python detect.py --source 0  # webcam
 
 ## Results
 
-***We compare the results with other state-of-the-art end-to-end target detectors and show the results for the Dota dataset***
+***We compare the results with other state-of-the-art end-to-end object detectors and show the results for the Dota dataset***
 
 | Method         | **Params(M)** | **GFLOPs** | **FPS@RTX 3060** | AP    | AP50  | AP75  |
 | -------------- | ---------- | ---------- | ---------------- | ----- | ----- | ----- |

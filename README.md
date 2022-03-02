@@ -2,7 +2,7 @@
 
 PL-YOLO is a lightweight model for small object detection. Related [paper]() are available here.
 
-![result](G:\result1.png)
+![result](result.png)
 
 ## Download
 

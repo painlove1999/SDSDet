@@ -746,108 +746,11 @@ class CSPl(nn.Module):
 
 
 
-# class CSPl(nn.Module):
-#     # CSPl
-#     def __init__(self, c1, c2, shortcut=True):  # ch_in, ch_out, number, shortcut, groups, expansion
-#         super().__init__()
-#         c_ = int(c2* 0.5)
-#         c_2 = int(c2- c_)
-#         self.cv1 = Conv(c1, c2, 1, 1)
-#         self.cv2 = Conv(c_2, c_2, 1, 1)
-#         self.cv3=Conv(c_, c_, 1)
-#         self.cv4 = Conv(c_+c_2, c2, 1)
-#         self.m = nn.Sequential(*[LC(c_,c_,shortcut) for _ in range(1)])
-#         self.a=1
-#
-#
-#
-#     def forward(self, x):
-#         x=self.cv1(x)
-#         x1,x2=x.chunk(2,dim=1)
-#         return self.cv4(torch.cat((self.m(self.cv3(x2)),self.cv2(x1)),dim=1))
-
-
-# class CSPl(nn.Module):
-#     # CSPl
-#     def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
-#         super().__init__()
-#         c_ = int(c2 * e)  # hidden channels
-#         self.cv1 = Conv(c1, c_, 3, 1)
-#         # self.cv2 = Conv(c_, c_, 1, 1)
-#         self.cv3=Conv(c_, c_, 1, 1)
-#         self.cv4 = Conv(2 * c_, c2, 1)
-#         self.m = nn.Sequential(*[LC(c_,c_,shortcut) for _ in range(n)])
-#
-#
-#     def forward(self, x):
-#         x=self.cv1(x)
-#         return self.cv4(torch.cat((self.m(self.cv3(x)), x), dim=1))
-
-
-# class CSPl(nn.Module):
-#     # CSPl
-#     def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
-#         super().__init__()
-#         c_ = int(c2*e)  # hidden channels
-#         self.cv1 = Conv(c1, c_, 1, 1)
-#         self.cv2 = Conv(c_, c_, 1, 1)
-#         self.cv3= Conv(c_, c_, 1, 1)
-#         self.cv4 = Conv(2 * c_, c2, 1)
-#         self.m = nn.Sequential(*[LC(c_,c_,shortcut) for _ in range(n)])
-#
-#
-#     def forward(self, x):
-#         x=self.cv1(x)
-#         return self.cv4(torch.cat((self.m(self.cv3(x)), self.cv2(x)), dim=1))
 
 
 
 
 
-class NEMF(nn.Module):
 
-    def __init__(self,width,height, channel):
-        super().__init__()
-        print(width,height,channel)
-        self.act=nn.Sigmoid()
-        self.width=width
-        self.height=height
-        self.up=nn.Upsample(scale_factor=2)
-        self.register_buffer('pre_computed_dct_weights', get_dct_weights( self.width, self.height, channel))
-
-    def forward(self,x):
-        x1,x2=x
-        if x1.shape[2]==self.width:
-            x2=self.act(torch.sum(self.up(x2)*self.pre_computed_dct_weights,dim=1,keepdim=True))
-        else:
-            x2 = self.act(self.up(x2).mean(dim=1, keepdim=True))
-
-
-        x=x1-x1*x2
-
-        return x
-
-def get_1d_dct(i, freq, L):
-    result = math.cos(math.pi * freq * (i + 0.5) / L) / math.sqrt(L)
-    if freq == 0:
-        return result
-    else:
-        return result * math.sqrt(2)
-
-def get_dct_weights( width, height, channel, fidx_u= [0,0,6,0,0,1,1,4,5,1,3,0,0,0,2,3]):
-
-    scale_ratio = channel//7
-    fidx_u = [u*scale_ratio for u in fidx_u]
-
-    dct_weights = torch.zeros(1, channel, width*height)
-    c_part = width*height // len(fidx_u)
-    # split channel for multi-spectal attention
-    for i,u_x in enumerate(fidx_u):
-        for t in range(channel):
-                dct_weights[:, t, i * c_part: (i+1)*c_part]\
-                =get_1d_dct(t, u_x, channel)
-
-    # Eq. 7 in our paper
-    return dct_weights.view(1, channel, width,height)
 
 

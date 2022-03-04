@@ -2,7 +2,7 @@
 
 PL-YOLO is a lightweight model for small object detection. Related [paper]() are available here.
 
-![result](result.png)
+![result](result/result.png)
 
 ## Download
 
@@ -58,6 +58,8 @@ python detect.py --source 0  # webcam
 | **PL-YOLO** | **4.63** | **10.5** | **90** | **42.0%** | **66.0%** | **45.0%** |
 | **PL-YOLO(832)** | --- | ---- | **121** | **40.5%** | **64.0%** | **43.3%** |
 | **PL-YOLO(640)** | --- | ----- | **162** | **37.4%** | **60.0%** | **38.0%** |
+
+![result2](result\result2.png)
 
 ## Acknowledgements
 

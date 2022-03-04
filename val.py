@@ -159,8 +159,8 @@ def run(data,
     confusion_matrix = ConfusionMatrix(nc=nc)
     names = {k: v for k, v in enumerate(model.names if hasattr(model, 'names') else model.module.names)}
     class_map = coco80_to_coco91_class() if is_coco else list(range(1000))
-    s = ('%20s' + '%11s' * 6) % ('Class', 'Images', 'Labels', 'P', 'R', 'mAP@.5', 'mAP@.5:.95')
-    dt, p, r, f1, mp, mr, map50, map = [0.0, 0.0, 0.0], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+    s = ('%20s' + '%11s' * 7) % ('Class', 'Images', 'Labels', 'P', 'R', 'mAP@.5', 'mAP@.5:.95','mAP@.75')
+    dt, p, r, f1, mp, mr, map50, map ,map75= [0.0, 0.0, 0.0], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,0.0
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class = [], [], [], []
     pbar = tqdm(dataloader, desc=s, bar_format='{l_bar}{bar:10}{r_bar}{bar:-10b}')  # progress bar
@@ -239,20 +239,20 @@ def run(data,
     stats = [np.concatenate(x, 0) for x in zip(*stats)]  # to numpy
     if len(stats) and stats[0].any():
         tp, fp, p, r, f1, ap, ap_class = ap_per_class(*stats, plot=plots, save_dir=save_dir, names=names)
-        ap50, ap = ap[:, 0], ap.mean(1)  # AP@0.5, AP@0.5:0.95
-        mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
+        ap50, ap75,ap = ap[:, 0],ap[:,5],ap.mean(1)  # AP@0.5, AP@0.5:0.95
+        mp, mr, map50, map,map75 = p.mean(), r.mean(), ap50.mean(), ap.mean(),ap75.mean()
         nt = np.bincount(stats[3].astype(np.int64), minlength=nc)  # number of targets per class
     else:
         nt = torch.zeros(1)
 
     # Print results
-    pf = '%20s' + '%11i' * 2 + '%11.3g' * 4  # print format
-    LOGGER.info(pf % ('all', seen, nt.sum(), mp, mr, map50, map))
+    pf = '%20s' + '%11i' * 2 + '%11.3g' * 5  # print format
+    LOGGER.info(pf % ('all', seen, nt.sum(), mp, mr, map50, map,map75))
 
     # Print results per class
     if (verbose or (nc < 50 and not training)) and nc > 1 and len(stats):
         for i, c in enumerate(ap_class):
-            LOGGER.info(pf % (names[c], seen, nt[c], p[i], r[i], ap50[i], ap[i]))
+            LOGGER.info(pf % (names[c], seen, nt[c], p[i], r[i], ap50[i], ap[i],ap75[i]))
 
     # Print speeds
     t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
@@ -306,14 +306,14 @@ def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data', type=str, default=ROOT / 'data/DOTA.yaml', help='dataset.yaml path')
     parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'weights/PL-YOLO.pt', help='model.pt path(s)')
-    parser.add_argument('--batch-size', type=int, default=8, help='batch size')
+    parser.add_argument('--batch-size', type=int, default=1, help='batch size')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=1024, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.001, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.6, help='NMS IoU threshold')
     parser.add_argument('--task', default='val', help='train, val, test, speed or study')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--single-cls', action='store_true', help='treat as single-class dataset')
-    parser.add_argument('--augment', action='store_true', default=True,help='augmented inference')
+    parser.add_argument('--augment', action='store_true', default=False,help='augmented inference')
     parser.add_argument('--verbose', action='store_true', help='report mAP by class')
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
     parser.add_argument('--save-hybrid', action='store_true', help='save label+prediction hybrid results to *.txt')

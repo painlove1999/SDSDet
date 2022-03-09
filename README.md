@@ -15,7 +15,7 @@ $ git clone https://github.com/painlove1999/PL-YOLO
 ***The training process is referred to yolov5, and we increased the weight of PL-YOLO on the Dota dataset***
 
 ```bash
-python train.py --data DOTA.yaml --cfg models/PL-YOLO.yaml --weights 'weights/PL-YOLO.pt' --batch-size 1                                                                                                18                                                                                              32
+python train.py --data data/DOTA.yaml --cfg models/PL-YOLO.yaml --weights 'weights/PL-YOLO.pt' --batch-size 1                                                                                                18                                                                                              32
 ```
 
 ## Inference 
@@ -25,14 +25,14 @@ python detect.py --source 0  # webcam
                           img.jpg  # image
                           vid.mp4  # video
                           path/  # directory
-                          path/*.jpg  # glob
+                          path/data/images  # glob
                           'https://youtu.be/Zgi9g1ksQHc'  # YouTube
                           'rtsp://example.com/media.mp4'  # RTSP, RTMP, HTTP stream
 ```
 
 ## Results
 
-***We compare the results with other state-of-the-art end-to-end object detectors and show the results for the Dota dataset(@1024x1024)***
+**We compare the results with other state-of-the-art end-to-end object detectors and show the results for the Dota dataset(@1024x1024)**
 
 | Method         | **Params(M)** | **GFLOPs** | **FPS@RTX 3060** | AP    | AP50  | AP75  |
 | -------------- | ---------- | ---------- | ---------------- | ----- | ----- | ----- |

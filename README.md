@@ -59,7 +59,7 @@ python detect.py --source 0  # webcam
 | **PL-YOLO(832)** | --- | ---- | **121** | **40.5%** | **64.0%** | **43.3%** |
 | **PL-YOLO(640)** | --- | ----- | **162** | **37.4%** | **60.0%** | **38.0%** |
 
-![result2](result\result2.png)
+![result2](/result/result2.png)
 
 ## Acknowledgements
 

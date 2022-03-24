@@ -238,6 +238,124 @@ class GhostBottleneck(nn.Module):
         return self.conv(x) + self.shortcut(x)
 
 
+# /////////////////
+
+class SElayer(nn.Module):
+
+    def __init__(self, channel, reduction=16):
+        super(SElayer, self).__init__()
+        self.avg_pool = torch.nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channel, channel // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(channel // reduction, channel, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y.expand_as(x)
+
+
+class NEM(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+        self.act = nn.Sigmoid()
+        self.up = nn.Upsample(scale_factor=2)
+
+    def forward(self, x):
+        x1, x2 = x
+        # w1=(torch.sum((x1).cpu(), dim=1) / x1.shape[1]).squeeze().cpu()
+        #
+        # w2= (torch.sum((x2).cpu(), dim=1) / x2.shape[1]).squeeze().cpu()
+
+        x2 = self.act(self.up(x2).mean(dim=1, keepdim=True))
+        x2 = x2.detach()
+        # w6= (torch.sum((x2).cpu(), dim=1) / (x2).shape[1]).squeeze().cpu()
+        # w3=(torch.sum((x1*x2).cpu(), dim=1) / (x1*x2).shape[1]).squeeze().cpu()
+        # w4=(torch.sum(x1.cpu(), dim=1) / (x1).shape[1]).squeeze().cpu()
+        #
+        x = x1 - x1 * x2
+        # w5= (torch.sum(x.cpu(), dim=1) / (x).shape[1]).squeeze().cpu()
+        #
+        # fig, ax = plt.subplots(1,6, tight_layout=False)  # 8 rows x n/8 cols
+        # ax = ax.ravel()
+        # ax[0].imshow(w1)  # cmap='gray'
+        # ax[0].axis('off')
+        # ax[1].imshow(w2)  # cmap='gray'
+        # ax[1].axis('off')
+        # ax[2].imshow(w3)  # cmap='gray'
+        # ax[2].axis('off')
+        # ax[3].imshow(w4)  # cmap='gray'
+        # ax[3].axis('off')
+        # ax[4].imshow(w5)  # cmap='gray'
+        # ax[4].axis('off')
+        # ax[5].imshow(w6)  # cmap='gray'
+        # ax[5].axis('off')
+        # plt.savefig("zky", dpi=300, bbox_inches='tight')
+        return x
+
+
+class DCL(nn.Module):
+    def __init__(self, c1, c2, shortcut=False):
+        super(DCL, self).__init__()
+        self.add = shortcut
+        c_ = int(c1 * 0.5)
+        c_2 = int(c1 - c_)
+        self.conv1 = Conv(c_2, c_2, k=3, s=1)
+        self.conv2 = nn.Sequential(Conv(c_, c_, k=1, s=1), DWConv(c_, c_, k=3, s=1, ))
+        self.conv3 = Conv(c1, c2, k=1, s=1)
+
+    def forward(self, x):
+        x1, x2 = x.chunk(2, dim=1)
+        x1 = self.conv1(x1)
+        x2 = self.conv2(x2)
+        x3 = torch.cat([x1, x2], dim=1)
+        x3 = x3 + x if self.add else x3
+        x3 = self.conv3(x3)
+        return x3
+
+
+class Patch(nn.Module):
+    def __init__(self, c1, c2, k=2, s=2, p=None, g=1, act=True):
+        super(Patch, self).__init__()
+        self.patch = Conv(c1, c2, k, s, 0, g, act)
+
+    def forward(self, x):
+        return self.patch(x)
+
+
+class LC(nn.Module):
+
+    def __init__(self, c1, c2, shortcut=True, g=1):  # ch_in, ch_out, shortcut, groups
+        super().__init__()
+
+        self.cv1 = Conv(c1, c2, 3, 1, g=g)
+        self.add = shortcut
+        self.cv2 = Conv(c1, c2) if shortcut and c1 != c2 else nn.Identity()
+
+    def forward(self, x):
+        return self.cv2(x) + self.cv1(x) if self.add else self.cv1(x)
+
+
+#
+class CSPl(nn.Module):
+    # CSPl
+    def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
+        super().__init__()
+        c_ = int(c2 * e)  # hidden channels
+        self.cv1 = Conv(c1, c_, 1, 1)
+        self.cv2 = Conv(c1, c_, 1, 1)
+        self.cv3 = Conv(2 * c_, c2, 1)
+        self.m = nn.Sequential(*[LC(c_, c_, shortcut) for _ in range(n)])
+
+    def forward(self, x):
+        return self.cv3(torch.cat((self.m(self.cv1(x)), self.cv2(x)), dim=1))
+
+
 class Contract(nn.Module):
     # Contract width-height into channels, i.e. x(1,64,80,80) to x(1,256,40,40)
     def __init__(self, gain=2):
@@ -624,125 +742,6 @@ class Classify(nn.Module):
         z = torch.cat([self.aap(y) for y in (x if isinstance(x, list) else [x])], 1)  # cat if list
         return self.flat(self.conv(z))  # flatten to x(b,c2)
 
-
-# /////////////////
-
-class SElayer(nn.Module):
-
-    def __init__(self, channel, reduction=16):
-        super(SElayer, self).__init__()
-        self.avg_pool = torch.nn.AdaptiveAvgPool2d(1)
-        self.fc = nn.Sequential(
-            nn.Linear(channel, channel // reduction, bias=False),
-            nn.ReLU(inplace=True),
-            nn.Linear(channel // reduction, channel, bias=False),
-            nn.Sigmoid()
-        )
-
-    def forward(self, x):
-        b, c, _, _ = x.size()
-        y = self.avg_pool(x).view(b, c)
-        y = self.fc(y).view(b, c, 1, 1)
-        return x * y.expand_as(x)
-
-
-class NEM(nn.Module):
-
-    def __init__(self):
-        super().__init__()
-        self.act=nn.Sigmoid()
-        self.up=nn.Upsample(scale_factor=2)
-
-    def forward(self,x):
-        x1,x2=x
-        # w1=(torch.sum((x1).cpu(), dim=1) / x1.shape[1]).squeeze().cpu()
-        #
-        # w2= (torch.sum((x2).cpu(), dim=1) / x2.shape[1]).squeeze().cpu()
-
-        with torch.no_grad():
-           x2=self.act(self.up(x2).mean(dim=1,keepdim=True))
-        # w6= (torch.sum((x2).cpu(), dim=1) / (x2).shape[1]).squeeze().cpu()
-        # w3=(torch.sum((x1*x2).cpu(), dim=1) / (x1*x2).shape[1]).squeeze().cpu()
-        # w4=(torch.sum(x1.cpu(), dim=1) / (x1).shape[1]).squeeze().cpu()
-        #
-        x=x1-x1*x2
-        # w5= (torch.sum(x.cpu(), dim=1) / (x).shape[1]).squeeze().cpu()
-        #
-        # fig, ax = plt.subplots(1,6, tight_layout=False)  # 8 rows x n/8 cols
-        # ax = ax.ravel()
-        # ax[0].imshow(w1)  # cmap='gray'
-        # ax[0].axis('off')
-        # ax[1].imshow(w2)  # cmap='gray'
-        # ax[1].axis('off')
-        # ax[2].imshow(w3)  # cmap='gray'
-        # ax[2].axis('off')
-        # ax[3].imshow(w4)  # cmap='gray'
-        # ax[3].axis('off')
-        # ax[4].imshow(w5)  # cmap='gray'
-        # ax[4].axis('off')
-        # ax[5].imshow(w6)  # cmap='gray'
-        # ax[5].axis('off')
-        # plt.savefig("zky", dpi=300, bbox_inches='tight')
-        return x
-
-
-
-
-class DCL(nn.Module):
-    def __init__(self,c1,c2,shortcut=False):
-        super(DCL, self).__init__()
-        self.add=shortcut
-        c_=int(c1*0.5)
-        c_2=int(c1-c_)
-        self.conv1=Conv(c_2,c_2,k=3,s=1)
-        self.conv2=nn.Sequential(Conv(c_,c_,k=1,s=1),DWConv(c_,c_,k=3,s=1,))
-        self.conv3=Conv(c1,c2,k=1,s=1)
-
-
-    def forward(self,x):
-        x1,x2=x.chunk(2,dim=1)
-        x1=self.conv1(x1)
-        x2=self.conv2(x2)
-        x3=torch.cat([x1,x2],dim=1)
-        x3=x3+x if self.add else x3
-        x3=self.conv3(x3)
-        return x3
-
-class Patch(nn.Module):
-    def __init__(self,c1,c2,k=2, s=2, p=None, g=1, act=True):
-        super(Patch, self).__init__()
-        self.patch=Conv(c1,c2, k, s, 0, g, act)
-
-    def forward(self,x):
-
-        return self.patch(x)
-
-
-class LC(nn.Module):
-
-    def __init__(self, c1, c2, shortcut=True, g=1):  # ch_in, ch_out, shortcut, groups
-        super().__init__()
-
-        self.cv1 = Conv(c1, c2, 3, 1, g=g)
-        self.add=shortcut
-        self.cv2=Conv(c1,c2) if shortcut and c1!=c2 else nn.Identity()
-
-    def forward(self, x):
-        return self.cv2(x) + self.cv1(x) if self.add else self.cv1(x)
-#
-class CSPl(nn.Module):
-    # CSPl
-    def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5):  # ch_in, ch_out, number, shortcut, groups, expansion
-        super().__init__()
-        c_ = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, c_, 1, 1)
-        self.cv2 = Conv(c1, c_, 1, 1)
-        self.cv3 = Conv(2 * c_, c2, 1)
-        self.m = nn.Sequential(*[LC(c_,c_,shortcut) for _ in range(n)])
-
-
-    def forward(self, x):
-        return self.cv3(torch.cat((self.m(self.cv1(x)), self.cv2(x)), dim=1))
 
 
 

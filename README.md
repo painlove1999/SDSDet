@@ -1,6 +1,6 @@
-# SMOD-YOLO
+# SDSDet
 
-SMOD-YOLO is a lightweight model for small object detection.
+SDSDet is a lightweight model for small object detection.
 
 ![result](result/result.png)
 
@@ -12,10 +12,10 @@ $ git clone https://github.com/painlove1999/SMOD-YOLO
 
 ## Train
 
-***The training process is referred to yolov5, and we increased the weight of PL-YOLO on the Dota dataset***
+***The training process is referred to yolov5, and we increased the weight of SDSDet on the Dota dataset***
 
 ```bash
-python train.py --data data/DOTA.yaml --cfg models/PL-YOLO.yaml --weights 'weights/SMOD-YOLO.pt' --batch-size 1                                                                                                18                                                                                              32
+python train.py --data data/DOTA.yaml --cfg models/PL-YOLO.yaml --weights 'weights/SDSDet.pt' --batch-size 1                                                                                                18                                                                                              32
 ```
 
 ## Inference 
@@ -48,7 +48,7 @@ python detect.py --source 0  # webcam
 | **YOLOv3-spp** | 62.64 | 156.2 | 24 | 46.1% | 71.0% | 47.9% |
 | **YOLOv4-tiny** | 6.15 | 19.2 | 90 | 37.7% | 61.0% | ---- |
 | **YOLOv3-tiny** | 8.70 | 13.0 | 100 | 34.8% | 58.2% | ---- |
-| **SMOD-YOLO** | **4.87** | **11.3** | **95** | **42.8%** | **67.6%** | **45.6%** |
+| **SDSDet** | **4.87** | **11.3** | **95** | **42.8%** | **67.6%** | **45.6%** |
 
 
 ![result2](/result/result2.png)

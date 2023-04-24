@@ -1,0 +1,19 @@
+
+# Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
+path: I:/Dota test3 # dataset root dir
+train: images/train  # train images (relative to 'path') 128 images
+val: images/val  # val images (relative to 'path') 128 images
+test:  # test images (optional)
+
+# Classes
+nc: 16  # number of classes
+names: ['plane', 'baseball-diamond', 'bridge', 'ground-track-field',
+              'small-vehicle', 'large-vehicle', 'ship',
+              'tennis-court', 'basketball-court',
+              'storage-tank', 'soccer-ball-field',
+              'roundabout', 'harbor',
+              'swimming-pool', 'helicopter','container-crane']
+
+
+# Download script/URL (optional)
+#download: https://github.com/ultralytics/yolov5/releases/download/v1.0/coco128.zip

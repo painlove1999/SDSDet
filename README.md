@@ -15,7 +15,7 @@ $ git clone https://github.com/painlove1999/SDSDet
 ***The training process is referred to yolov5, and we increased the weight of SDSDet on the Dota dataset***
 
 ```bash
-python train.py --data data/DOTA.yaml --cfg models/PL-YOLO.yaml --weights 'weights/SDSDet.pt' --batch-size 1                                                                                                18                                                                                              32
+python train.py --data data/DOTA.yaml --cfg models/SDSDet.yaml --weights 'weights/SDSDet.pt' --batch-size 1                                                                                                18                                                                                              32
 ```
 
 ## Inference 

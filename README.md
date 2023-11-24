@@ -7,7 +7,7 @@ SDSDet is a lightweight model for small object detection.
 ## Download
 
 ```bash
-$ git clone https://github.com/painlove1999/SMOD-YOLO
+$ git clone https://github.com/painlove1999/SDSDet
 ```
 
 ## Train
